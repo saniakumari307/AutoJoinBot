@@ -5,8 +5,10 @@ from telegram.ext import (
     ChatJoinRequestHandler, ContextTypes, filters as tg_filters
 )
 from config import BOT_TOKEN, CHANNEL_ID, CHANNEL_URL
-from db import add_user, save_message
+from db import add_user, save_message, init_db
 import datetime
+
+init_db()
 
 # --- Handlers from previous api.py ---
 
