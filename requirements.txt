@@ -7,3 +7,4 @@ Werkzeug==2.2.3
 gevent-websocket==0.10.1
 pyrogram==2.0.106
 telethon==1.34.0 
+tgcrypto 
