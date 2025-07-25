@@ -433,54 +433,6 @@ async def approve_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         print(f"Failed to send welcome message: {e}")
 
-# Register handlers for Telegram bot
-application = ApplicationBuilder().token(BOT_TOKEN).build()
-application.add_handler(CommandHandler('start', start))
-application.add_handler(CallbackQueryHandler(channel_joined_callback, pattern='^joined_channel$'))
-application.add_handler(MessageHandler(tg_filters.TEXT & ~tg_filters.COMMAND, user_message_handler))
-application.add_handler(MessageHandler(tg_filters.PHOTO, user_message_handler))
-application.add_handler(MessageHandler(tg_filters.VIDEO, user_message_handler))
-application.add_handler(MessageHandler(tg_filters.VOICE, user_message_handler))
-application.add_handler(MessageHandler(tg_filters.AUDIO, user_message_handler))
-application.add_handler(ChatJoinRequestHandler(approve_join))
-
-# Pyrogram Bot Setup
-pyro_app = Client(
-    "AutoApproveBot",
-    bot_token=config.BOT_TOKEN,
-    api_id=config.API_ID,
-    api_hash=config.API_HASH
-)
-
-CHAT_ID = config.CHAT_ID
-WELCOME_TEXT = getattr(config, "WELCOME_TEXT", "🎉 Hi {mention}, you are now a member of {title}!")
-
-@pyro_app.on_chat_join_request(pyro_filters.chat(CHAT_ID))
-async def approve_and_dm(client: Client, join_request: ChatJoinRequest):
-    user = join_request.from_user
-    chat = join_request.chat
-
-    await client.approve_chat_join_request(chat.id, user.id)
-    print(f"Approved: {user.first_name} ({user.id}) in {chat.title}")
-
-    # Add user to DB (reuse add_user from api.py)
-    from datetime import datetime
-    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
-    username = user.username or ''
-    join_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    invite_link = None  # Pyrogram does not provide invite_link in join request
-    add_user(user.id, full_name, username, join_date, invite_link)
-
-    try:
-        await client.send_message(
-            user.id,
-            WELCOME_TEXT.format(mention=user.mention, title=chat.title)
-        )
-        print(f"DM sent to {user.first_name} ({user.id})")
-    except Exception as e:
-        print(f"Failed to send DM to {user.first_name} ({user.id}): {e}")
-
-
 # --- ADMIN GIF SUPPORT ---
 @app.route('/chat/<int:user_id>', methods=['POST'])
 def chat_send(user_id):
@@ -748,16 +700,6 @@ if __name__ == '__main__':
     # Flask-SocketIO আলাদা থ্রেডে
     flask_thread = Thread(target=lambda: socketio.run(app, port=port, debug=False, allow_unsafe_werkzeug=True), daemon=True)
     flask_thread.start()
-
-    # python-telegram-bot আলাদা থ্রেডে
-    def run_telegram_bot():
-        print("Telegram bot running and waiting for user messages...")
-        import asyncio
-        asyncio.set_event_loop(asyncio.new_event_loop())
-        application.run_polling()
-
-    telegram_thread = Thread(target=run_telegram_bot, daemon=True)
-    telegram_thread.start()
 
     # Pyrogram bot main thread-এ (join approval এর জন্য)
     print("Pyrogram bot running and waiting for join requests...")
