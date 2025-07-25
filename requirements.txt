@@ -1,0 +1,6 @@
+python-telegram-bot==20.7
+Flask==2.2.5
+flask-socketio==5.3.6
+gevent==23.9.1
+Werkzeug==2.2.3
+gevent-websocket==0.10.1 
