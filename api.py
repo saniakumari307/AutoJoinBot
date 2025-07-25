@@ -744,20 +744,21 @@ def on_join(data):
 if __name__ == '__main__':
     import os
     port = int(os.environ.get("PORT", 5001))
-    # Start Flask-SocketIO in a thread
-    flask_thread = Thread(target=lambda: socketio.run(app, port=port, debug=False), daemon=True)
+
+    # Flask-SocketIO আলাদা থ্রেডে
+    flask_thread = Thread(target=lambda: socketio.run(app, port=port, debug=False, allow_unsafe_werkzeug=True), daemon=True)
     flask_thread.start()
 
-    # Start Telegram bot (for user messages) in a thread
-    def run_telegram_bot():
-        print("Telegram bot running and waiting for user messages...")
-        import asyncio
-        asyncio.set_event_loop(asyncio.new_event_loop())
-        application.run_polling()
+    # Pyrogram bot আলাদা থ্রেডে
+    def run_pyrogram_bot():
+        print("Pyrogram bot running and waiting for join requests...")
+        pyro_app.run()
 
-    telegram_thread = Thread(target=run_telegram_bot, daemon=True)
-    telegram_thread.start()
+    pyrogram_thread = Thread(target=run_pyrogram_bot, daemon=True)
+    pyrogram_thread.start()
 
-    # Start Pyrogram bot in main thread (for join requests)
-    print("Pyrogram bot running and waiting for join requests...")
-    pyro_app.run() 
+    # python-telegram-bot main thread-এ
+    print("Telegram bot running and waiting for user messages...")
+    import asyncio
+    asyncio.set_event_loop(asyncio.new_event_loop())
+    application.run_polling() 
