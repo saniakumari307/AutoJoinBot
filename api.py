@@ -749,9 +749,11 @@ if __name__ == '__main__':
     flask_thread = Thread(target=lambda: socketio.run(app, port=port, debug=False, allow_unsafe_werkzeug=True), daemon=True)
     flask_thread.start()
 
-    # Pyrogram bot আলাদা থ্রেডে
+    # Pyrogram bot আলাদা থ্রেডে (event loop সহ)
     def run_pyrogram_bot():
         print("Pyrogram bot running and waiting for join requests...")
+        import asyncio
+        asyncio.set_event_loop(asyncio.new_event_loop())
         pyro_app.run()
 
     pyrogram_thread = Thread(target=run_pyrogram_bot, daemon=True)
