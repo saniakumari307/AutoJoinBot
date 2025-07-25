@@ -17,12 +17,45 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler
 from telegram.ext import ChatJoinRequestHandler
 
-from pyrogram import Client, filters
+from pyrogram import Client, filters as pyro_filters
 from pyrogram.types import ChatJoinRequest
 import config  # config.py should have BOT_TOKEN, API_ID, API_HASH, CHAT_ID, WELCOME_TEXT
 
-from telegram.ext import filters as tg_filters
-from pyrogram import filters as pyro_filters
+pyro_app = Client(
+    "AutoApproveBot",
+    bot_token=config.BOT_TOKEN,
+    api_id=config.API_ID,
+    api_hash=config.API_HASH
+)
+
+CHAT_ID = config.CHAT_ID
+WELCOME_TEXT = getattr(config, "WELCOME_TEXT", "🎉 Hi {mention}, you are now a member of {title}!")
+
+@pyro_app.on_chat_join_request(pyro_filters.chat(CHAT_ID))
+async def approve_and_dm(client, join_request: ChatJoinRequest):
+    user = join_request.from_user
+    chat = join_request.chat
+
+    await client.approve_chat_join_request(chat.id, user.id)
+    print(f"Approved: {user.first_name} ({user.id}) in {chat.title}")
+
+    # Add user to DB (reuse add_user from api.py)
+    from datetime import datetime
+    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
+    username = user.username or ''
+    join_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    invite_link = None  # Pyrogram does not provide invite_link in join request
+    add_user(user.id, full_name, username, join_date, invite_link)
+
+    try:
+        await client.send_message(
+            user.id,
+            WELCOME_TEXT.format(mention=user.mention, title=chat.title)
+        )
+        print(f"DM sent to {user.first_name} ({user.id})")
+    except Exception as e:
+        print(f"Failed to send DM to {user.first_name} ({user.id}): {e}")
+
 from telegram import InputMediaPhoto, InputMediaVideo, InputMediaAudio, InputMediaAnimation
 
 from collections import defaultdict
