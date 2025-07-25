@@ -749,18 +749,18 @@ if __name__ == '__main__':
     flask_thread = Thread(target=lambda: socketio.run(app, port=port, debug=False, allow_unsafe_werkzeug=True), daemon=True)
     flask_thread.start()
 
-    # Pyrogram bot আলাদা থ্রেডে (event loop সহ)
-    def run_pyrogram_bot():
-        print("Pyrogram bot running and waiting for join requests...")
+    # python-telegram-bot আলাদা থ্রেডে
+    def run_telegram_bot():
+        print("Telegram bot running and waiting for user messages...")
         import asyncio
         asyncio.set_event_loop(asyncio.new_event_loop())
-        pyro_app.run()
+        application.run_polling()
 
-    pyrogram_thread = Thread(target=run_pyrogram_bot, daemon=True)
-    pyrogram_thread.start()
+    telegram_thread = Thread(target=run_telegram_bot, daemon=True)
+    telegram_thread.start()
 
-    # python-telegram-bot main thread-এ
-    print("Telegram bot running and waiting for user messages...")
+    # Pyrogram bot main thread-এ (join approval এর জন্য)
+    print("Pyrogram bot running and waiting for join requests...")
     import asyncio
     asyncio.set_event_loop(asyncio.new_event_loop())
-    application.run_polling() 
+    pyro_app.run() 
